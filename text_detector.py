@@ -4,6 +4,7 @@ import pytesseract
 import numpy as np
 from rem_lines import ignore_lines, remove_lines
 from merge_boxes import make_rows, merge_boxes
+import time
 
 def main():
 	# Mention the installed location of Tesseract-OCR in your system 
@@ -24,20 +25,25 @@ def main():
 	contoursBBS = make_rows(contours)
 
 	#combining contours on the bases of contour thresh x
-	merge_cnt = merge_boxes(contoursBBS, thresh_x = 0.5, thresh_y = 0.6)
+	merge_cnt = merge_boxes(contoursBBS, thresh_x = 0.7, thresh_y = 0.6)
 
-
+	print("recognizing text",flush=True)
 	# Looping through the identified contours 
 	# Then rectangular part is cropped and passed on 
 	# to pytesseract for extracting text from it 
 	# Extracted text is then written into the text file 
 	# Open the file in append mode 
+	croptime=0
+	tesstime=0
+	tt=time.time()
 	file = open("recognized.txt", "a")
+
 	for cnt in merge_cnt: 
 		#print(cnt)
-		
+		cv2.line(rect,(0,cnt),(len(rect[0])-1,cnt),(255,255,0),2)
 		for contour in merge_cnt[cnt] :
 			[x, y, w, h] = contour
+			if h<10 : continue
 			# Drawing a rectangle on copied image 
 			rect = cv2.rectangle(rect, (x, y), (x + w, y + h), (0, 255, 0), 2) 
 			
@@ -45,16 +51,22 @@ def main():
 			#offset= int (h*cnt_thresh_y)
 			#y=y-offset
 			#x=x-offset
-
+			start = time.time()
 			cropped = img[y :y + h , x :x + w ]  
-			
+			end = time.time()
+			croptime+= end-start
 			# Apply OCR on the cropped image 
-			text = pytesseract.image_to_string(cropped, lang='eng', config='--psm 6')
-			
+
+			text = ""
+			text = pytesseract.image_to_string(cropped, lang='eng', config='--psm 7')
+			end2 = time.time()
+			tesstime += end2-end
 			# Appending the text into file 
-			file.write(text) 
-			file.write("\n") 
-			
+			if text!="":
+				file.write(text) 
+				file.write("\n") 
+	tt = time.time()- tt
+	print("croptime: ",croptime, "  tesstime: ",tesstime,"   tt: ",tt)
 	# Close the file 
 	file.close 
 	cv2.imwrite('boxed.png', rect)
