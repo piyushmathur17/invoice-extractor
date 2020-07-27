@@ -46,7 +46,7 @@ def ignore_lines(img):
 	vertical_size=int(vertical_size)
 
 	# Create structure element for extracting vertical lines through morphology operations
-	print("defining vertical lines...")
+	print("defining vertical lines...",flush=True)
 	verticalStructure = cv2.getStructuringElement(cv2.MORPH_RECT, (1,vertical_size))
 
 	# Apply morphology operations
@@ -56,14 +56,16 @@ def ignore_lines(img):
 	cv2.imwrite('X.png',x)
 	minLineLength = 200
 	maxLineGap = 20
-	print("extracting vertical lines...")
+	print("extracting vertical lines...",flush=True)
+	#ines=[]
 	lines = cv2.HoughLinesP(x,1,np.pi/180,60,minLineLength,maxLineGap)
+	#if lines!=[]:
 	for line in lines:
 	    for x1,y1,x2,y2 in line:
 	        cv2.line(img,(x1,y1),(x2,y2),(ret,ret,ret),3)
 
 	#applying dilation to horizontal lines
-	print("defining horizontal lines...")
+	print("defining horizontal lines...",flush=True)
 	cols = y.shape[1]
 	horizontal_size = cols / 40
 	horizontal_size=int(horizontal_size)
@@ -74,18 +76,20 @@ def ignore_lines(img):
 	# Apply morphology operations
 	y = cv2.erode(y, horizontalStructure)
 	y = cv2.dilate(y, horizontalStructure) 
-	print("writing ...")
+	print("writing ...",flush=True)
 	cv2.imwrite('Y.png',y)
 
-	print("extracting horizontal lines...")
+	print("extracting horizontal lines...",flush=True)
 	minLineLength = 200
 	maxLineGap = 20
 	lines = cv2.HoughLinesP(y,1,np.pi/180,60,minLineLength,maxLineGap)
+	#lines=[]
+	#if lines != []:
 	for line in lines:
 	    for x1,y1,x2,y2 in line:
 	        cv2.line(img,(x1,y1),(x2,y2),(ret,ret,ret),3)
 
-	print("writing ...")
+	print("writing ...",flush=True)
 	cv2.imwrite('lines_removed.png',img)
 	
 	gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
@@ -93,12 +97,12 @@ def ignore_lines(img):
 	# Appplying dilation on the threshold image 
 	ret, thresh1 = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV) 
 	dilation = cv2.dilate(thresh1, rect_kernel, iterations = 1) 
-	print("writing ...")
+	print("writing ...",flush=True)
 	cv2.imwrite('dilated.png', dilation)
 	# Finding contours 
 	contours, hierarchy = cv2.findContours(dilation, cv2.RETR_EXTERNAL, 
 												cv2.CHAIN_APPROX_SIMPLE)
-	print("preprocessing done.")
+	print("preprocessing done.",flush=True)
 	return contours,hierarchy
 
 #img = cv2.imread("/home/piyush/Pictures/invoice1.png") 

@@ -1,11 +1,20 @@
 import numpy as np
 import cv2
 
+
 #a utility function to assign each word a row 
-def make_rows(contours, thresh_y = 0.7):
+def make_rows(contours, thresh_y = 0.6):
 	contoursBBS = {}
+	height_list=[]
 	for contour in contours:
 	    [x, y, w, h] = cv2.boundingRect(contour)
+	    height_list.append(h)
+	height_list.sort()
+	min_height = height_list[int(len(height_list)/2)]*0.6
+	print("min_height: ",min_height)
+	for contour in contours:
+	    [x, y, w, h] = cv2.boundingRect(contour)
+	    if h< min_height : continue
 	    cnt= [x,y,w,h]
 	    search_key= y
 	    #check if current contour is part of any existing row
