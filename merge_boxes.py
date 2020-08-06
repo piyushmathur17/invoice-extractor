@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 
 
+
 #a utility function to assign each word a row 
 def make_rows(contours, thresh_y = 0.6):
 	contoursBBS = {}
@@ -41,14 +42,16 @@ def make_rows(contours, thresh_y = 0.6):
 	return contoursBBS
 
 def detect_line(rect,x1,x2,y1,y2,w1,w2,h1,h2):
-	x1=x1+w1+3
+	x1=x1+w1+1
 	y=int((y1+h1)/2 + (y2+h2)/2)
 	pos_edge=0
 	neg_edge=0
 	for i in range(x1,x2):
-		if (rect[y][i][0]+rect[y][i][1]+rect[y][i][2] - rect[y][i-2][0]-rect[y][i-2][1]-rect[y][i-2][2])/2 >= 40 : pos_edge=1
-		if (rect[y][i][0]+rect[y][i][1]+rect[y][i][2] - rect[y][i-2][0]-rect[y][i-2][1]-rect[y][i-2][2])/2  <= -40 : neg_edge=1
-		if(pos_edge and neg_edge): return True
+		if (int(rect[y][i][0])+int(rect[y][i][1])+int(rect[y][i][2]) - int(rect[y][i-2][0])-int(rect[y][i-2][1])-int(rect[y][i-2][2]))/2 >= 80 : pos_edge=1
+		if (int(rect[y][i][0])+int(rect[y][i][1])+int(rect[y][i][2]) - int(rect[y][i-2][0])-int(rect[y][i-2][1])-int(rect[y][i-2][2]) ) /2  <= -80 : neg_edge=1
+		if(pos_edge and neg_edge): 
+			print("line detected between ",x1+w1," ",x2)
+			return True
 	return False
 #a utility function to merge two words based on their nearness 
 def merge_boxes(rect, contoursBBS, thresh_x = 0.3, thresh_y = 0.3):
