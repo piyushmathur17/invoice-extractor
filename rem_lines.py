@@ -30,7 +30,41 @@ def remove_lines(img):
 	#return contours, hierarchy
 
 
+def stretch_columns(img):
+	structure = cv2.getStructuringElement(cv2.MORPH_RECT, (10,1))
+	img = cv2.erode(img, structure,iterations=1) 
+	structure = cv2.getStructuringElement(cv2.MORPH_RECT, (1,20))
+	x = cv2.dilate(img, structure,iterations=2) 
+	structure = cv2.getStructuringElement(cv2.MORPH_RECT, (10,1))
+	x = cv2.dilate(x, structure,iterations=1) 
+	contours, hierarchy = cv2.findContours(x, cv2.RETR_EXTERNAL, 
+												cv2.CHAIN_APPROX_SIMPLE)
 
+	cv2.imwrite("columnstretched.jpg",x)
+	return x
+
+def segment_columns(img,shape,contours):
+	mask = np.zeros((shape[0],shape[1]),np.uint8)
+	for key in contours:
+		for i in contours[key]:
+			[x,y,w,h]= i
+			#ones = np.ones((h,w),np.uint8) * 255
+			mask = cv2.rectangle(mask, (x, y), (x + w, y + h), (255, 255, 255), -1) 
+			print(y," ",y+h," ",x," ",x+w," is 255")
+
+	structure = cv2.getStructuringElement(cv2.MORPH_RECT, (4,1))
+	mask = cv2.erode(mask, structure,iterations=1)
+	structure = cv2.getStructuringElement(cv2.MORPH_RECT, (1,20))
+	mask = cv2.dilate(mask, structure,iterations=2)
+	cont, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, 
+												cv2.CHAIN_APPROX_SIMPLE)
+	for c in cont:
+		[x,y,w,h]= cv2.boundingRect(c)
+		#ones = np.ones((h,w),np.uint8) * 255
+		img = cv2.rectangle(img, (x, y), (x + w, y + h), (0,255,255), 3) 
+
+	cv2.imwrite("blocks.jpg",img)
+	return cont
 def ignore_lines(img,save_dir,file_name):
 
 	gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
@@ -66,7 +100,7 @@ def ignore_lines(img,save_dir,file_name):
 	#minLineLength = 200
 	#maxLineGap = 20
 	#print("extracting vertical lines...",flush=True)
-	#ines=[]
+	#ines=[]palta ki cgpa kitni h 8.07
 	#lines = cv2.HoughLinesP(x,1,np.pi/180,60,minLineLength,maxLineGap)
 	#garb=0
 	#if lines is not None: 
@@ -121,7 +155,7 @@ def ignore_lines(img,save_dir,file_name):
 	# Finding contours 
 	contours, hierarchy = cv2.findContours(dilation, cv2.RETR_EXTERNAL, 
 												cv2.CHAIN_APPROX_SIMPLE)
-
+	column_dilation = stretch_columns(dilation)
 	print("preprocessing done.",flush=True)
 	return contours,hierarchy, bw
 
