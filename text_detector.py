@@ -3,7 +3,7 @@ from os import listdir
 import cv2 
 import pytesseract 
 import numpy as np
-from rem_lines import ignore_lines, remove_lines
+from rem_lines import ignore_lines, remove_lines, segment_columns
 from merge_boxes import make_rows, merge_boxes
 from graph import make_graph
 #from correctPerspective import getAngle, rotate_image
@@ -65,6 +65,7 @@ def get_text(save_dir,file_name, write_ = False):
 	# Read image from which text needs to be extracted 
 	img = cv2.imread(read_dir) 
 	rect= img
+	img2 = img
 	#remove lines and form contours
 	contours, hierarchy, img = ignore_lines(img,save_dir,file_name)
 	# Creating a copy of image 
@@ -80,8 +81,12 @@ def get_text(save_dir,file_name, write_ = False):
 
 	#combining contours on the bases of contour thresh x
 	merge_cnt = merge_boxes(rect, contoursBBS, thresh_x = 0.7, thresh_y = 0.6)
+	column_contours = segment_columns(img2,img.shape,merge_cnt)
 
 	print("recognizing text",flush=True)
+
+	#make_graph(rect,merge_cnt,[1,3,9,21,14,37,24,29,35,74,65,43,45,12,56],column_contours)
+	#return
 	# Looping through the identified contours 
 	# Then rectangular part is cropped and passed on 
 	# to pytesseract for extracting text from it 
@@ -90,15 +95,19 @@ def get_text(save_dir,file_name, write_ = False):
 	croptime=0
 	tesstime=0
 	tt=time.time()
+	key_nodes=[]
+	node_number=0
+	node_columns={}
 
 	for cnt in merge_cnt: 
 		#print(cnt)
-		cv2.line(rect,(0,cnt),(len(rect[0])-1,cnt),(255,255,0),2)
+		cv2.line(rect,(0,cnt),(len(rect[0])-1,cnt),(255,0,0),2)
 		for contour in merge_cnt[cnt] :
+			node_number+=1
 			[x, y, w, h] = contour
 			if h<10 : continue
 			# Drawing a rectangle on copied image 
-			rect = cv2.rectangle(rect, (x, y), (x + w, y + h), (0, 255, 0), 2) 
+			rect = cv2.rectangle(rect, (x, y), (x + w, y + h), (0, 255, 0), 1) 
 			
 			# Cropping the text block for giving input to OCR 
 			#offset= int (h*cnt_thresh_y)
@@ -116,16 +125,19 @@ def get_text(save_dir,file_name, write_ = False):
 			for tex in p:
 				tex=tex.lower()
 				if(tex in keys):
-					rect = cv2.rectangle(rect, (x, y), (x + w, y + h), (0, 0, 255), 2)
+					rect = cv2.rectangle(rect, (x, y), (x + w, y + h), (0, 0, 255), 1)
+					key_nodes.append(node_number-1)
 					break
 				else:
 					for k in keys:
-						print(k + " " + tex)
+						#print(k + " " + tex)
 						if(k in tex):
-							rect = cv2.rectangle(rect, (x, y), (x + w, y + h), (0, 0, 255), 2)
+							rect = cv2.rectangle(rect, (x, y), (x + w, y + h), (0, 0, 255), 1)
+							key_nodes.append(node_number-1)
 							break
-						if(levenshtein_ratio_and_distance(k,tex)>0.8): 			
-							rect = cv2.rectangle(rect, (x, y), (x + w, y + h), (0, 0, 255), 2)
+						if(len(text)>=1 and levenshtein_ratio_and_distance(k,tex)>0.8 ): 			
+							rect = cv2.rectangle(rect, (x, y), (x + w, y + h), (0, 0, 255), 1)
+							key_nodes.append(node_number-1)
 							break
 
 			end2 = time.time()
@@ -144,7 +156,7 @@ def get_text(save_dir,file_name, write_ = False):
 	cv2.imwrite(save_dir+'boxed_'+file_name, rect)
 
 
-	make_graph(rect,merge_cnt,[5,14,19,23,17,24, 56, 23, 34,12,35,26,8,36,30])
+	make_graph(rect,merge_cnt,key_nodes,column_contours)
 	#cv2.imshow('ho hey',rect)
 	#cv2.waitKey(0)
 	#cv2.destroyAllWindows()
