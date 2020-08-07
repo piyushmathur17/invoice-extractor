@@ -8,7 +8,7 @@ from merge_boxes import make_rows, merge_boxes
 from graph import make_graph
 #from correctPerspective import getAngle, rotate_image
 import time
-keys = ['supplier', 'dispatch', 'dispatched','seller', 'buyer', 'name', 'id', 'no.', 'number', 'gst', 'date', 'percent', 'invoice', 'total', 'cost', 'price', 'rate', 'description','article', 'quantity','amount', 'hsn','sl']
+keys = ['supplier','taxable','item','freight','insurance','charges','tax', 'value', 'dispatch', 'dispatched','seller', 'buyer', 'name', 'id', 'no.', 'number', 'gst', 'date', 'percent', 'invoice', 'total', 'cost', 'price', 'rate', 'description','article', 'quantity','amount', 'hsn','sl']
 
 def levenshtein_ratio_and_distance(s, t, ratio_calc = True):
     """ levenshtein_ratio_and_distance:
@@ -80,7 +80,7 @@ def get_text(save_dir,file_name, write_ = False):
 	contoursBBS = make_rows(contours)
 
 	#combining contours on the bases of contour thresh x
-	merge_cnt = merge_boxes(rect, contoursBBS, thresh_x = 0.7, thresh_y = 0.6)
+	merge_cnt = merge_boxes(rect, contoursBBS, thresh_x = 1.0, thresh_y = 0.6)
 	column_contours = segment_columns(img2,img.shape,merge_cnt)
 
 	print("recognizing text",flush=True)
@@ -170,7 +170,7 @@ def main():
 	for folder in folders:
 		dir_path = path + folder + "/"
 		images = listdir(dir_path)
-		if(folder!="Sample2"): continue
+		if(folder!="Sample3"): continue
 		for image in images:
 			if len(image.split('.')[0])>1:continue
 			file_name = image
