@@ -8,7 +8,7 @@ from merge_boxes import make_rows, merge_boxes
 from graph import make_graph
 #from correctPerspective import getAngle, rotate_image
 import time
-keys = ['supplier','taxable','item','freight','insurance','charges','tax', 'value', 'dispatch', 'dispatched','seller', 'buyer', 'name', 'id', 'no.', 'number', 'gst', 'date', 'percent', 'invoice', 'total', 'cost', 'price', 'rate', 'description','article', 'quantity','amount', 'hsn','sl']
+keys = ['supplier','taxable','item','freight','shipping','address','Discount','info','amt','amount','vehicle','bill','details','state','payment','insurance','charges','tax', 'value', 'dispatch', 'dispatched','seller', 'buyer', 'name', 'id', 'no.', 'number', 'gst', 'date', 'percent', 'invoice', 'total', 'cost', 'price', 'rate', 'description','article', 'quantity','amount', 'hsn','sl']
 
 def levenshtein_ratio_and_distance(s, t, ratio_calc = True):
     """ levenshtein_ratio_and_distance:
@@ -99,9 +99,9 @@ def get_text(save_dir,file_name, write_ = False):
 	node_number=0
 	node_columns={}
 
-	for cnt in merge_cnt: 
+	for cnt in sorted(merge_cnt): 
 		#print(cnt)
-		cv2.line(rect,(0,cnt),(len(rect[0])-1,cnt),(255,0,0),2)
+		#cv2.line(rect,(0,cnt),(len(rect[0])-1,cnt),(255,0,0),2)
 		for contour in merge_cnt[cnt] :
 			node_number+=1
 			[x, y, w, h] = contour

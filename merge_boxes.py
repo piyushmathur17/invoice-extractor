@@ -2,7 +2,6 @@ import numpy as np
 import cv2
 
 
-
 #a utility function to assign each word a row 
 def make_rows(contours, thresh_y = 0.6):
 	contoursBBS = {}
@@ -16,7 +15,7 @@ def make_rows(contours, thresh_y = 0.6):
 	print("min_height: ",min_height)
 	#finding suitable line height
 	alpha = int(len(height_list)*0.3)
-	line_height = sum(height_list[alpha:len(height_list)-alpha])/(len(height_list)-2*alpha)
+	line_height = 1.2*sum(height_list[alpha:len(height_list)-alpha])/(len(height_list)-2*alpha)
 
 	for contour in contours:
 	    [x, y, w, h] = cv2.boundingRect(contour)
@@ -70,7 +69,7 @@ def merge_boxes(rect, contoursBBS, thresh_x = 0.3, thresh_y = 0.3):
 		while j< len(contoursBBS[key]):
 
 			[x2,y2,w2,h2]=contoursBBS[key][j]
-			if( abs(y1-y2)<h1*thresh_y and abs(x1+new_width-x2) < h1*thresh_x and abs(new_height-h2)<h2*thresh_y and (not detect_line(rect,x1,x2,miny,y2, new_width,-1,new_height,h2) )):
+			if( abs(y1-y2)<h1*thresh_y and abs(x1+new_width-x2) < h1*thresh_x and abs(new_height-h2)<h2*thresh_y and not(detect_line(rect,x1,x2,miny,y2, new_width,-1,new_height,h2)and detect_line(rect,x1,x2,miny,y2, new_width,-1,int(new_height/2),int(h2/2)) ) ):
 				miny=min(miny,y2)
 				new_width= x2-x1+w2
 				new_height= max(new_height, y2+h2-miny)
