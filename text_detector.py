@@ -22,7 +22,7 @@ with open('label_synonyms.csv', mode='r') as infile:
 
 print(synonyms)
 
-keys = ['state','code','cgst','igst','sku','sales','supplier','taxable','item','freight','shipping','address','Discount','info','amt','amount','vehicle','bill','details','state','payment','insurance','charges','tax', 'value', 'dispatch', 'dispatched','seller', 'buyer', 'name', 'id', 'no.', 'number', 'gst', 'date', 'percent', 'invoice', 'total', 'cost', 'price', 'rate', 'description','article', 'quantity','amount', 'hsn','sl']
+keys = ['state','code','cgst','igst','sku','sales','supplier','taxable','item','freight','shipping','address','Discount','info','amt','amount','vehicle','bill','details','state','payment','insurance','charges','tax', 'value', 'dispatch', 'dispatched','seller', 'buyer', 'name', 'id', 'no.', 'number', 'gst', 'date', 'percent', 'invoice', 'total', 'cost', 'price', 'rate', 'description','article', 'quantity','amount', 'hsn','sl', 'buyer', 'receiver']
 
 
 def levenshtein_ratio_and_distance(s, t, ratio_calc = True):
@@ -189,7 +189,7 @@ def main():
 	for folder in folders:
 		dir_path = path + folder + "/"
 		images = listdir(dir_path)
-		if(folder!="Sample1"): continue
+		if(folder!="Sample3"): continue
 		for image in images:
 			if len(image.split('.')[0])>1:continue
 			file_name = image

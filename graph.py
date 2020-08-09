@@ -424,7 +424,13 @@ def make_graph(img,contours,key_fields,column_contours, text_val, synonyms, labe
 	with open('output.csv', 'w', newline="") as csv_file:  
 		writer = csv.writer(csv_file)
 		for key, value in data.items():
-			writer.writerow([key, value])
+			writer.writerow([key.upper(), value])
+
+	with open('output.csv', 'a+', newline="") as csv_file:  
+		writer = csv.writer(csv_file)
+		for i in range(0,2):
+			writer.writerow('')
+
 
 	with open("output.csv", "a+", newline="") as f:
 		writer = csv.writer(f)
