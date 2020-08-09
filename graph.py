@@ -1,7 +1,70 @@
 import cv2 
 import numpy as np
+
+
+def detect_line(rect, x, y1, y2):
+	pos_edge = 0
+	neg_edge = 0
+	for y in range(y1, y2):
+		if (int(rect[y][x][0])+int(rect[y][x][1])+int(rect[y][x][2]) - int(rect[y-2][x][0])-int(rect[y-2][x][1])-int(rect[y-2][x][2]))/2 >= 80:
+			pos_edge = 1
+		if (int(rect[y][x][0])+int(rect[y][x][1])+int(rect[y][x][2]) - int(rect[y-2][x][0])-int(rect[y-2][x][1])-int(rect[y-2][x][2])) / 2 <= -80:
+			neg_edge = 1
+		if(pos_edge and neg_edge):
+			print("line detected between ", y1, " ", y2)
+			return True
+	return False
+
+def levenshtein_ratio_and_distance(s, t, ratio_calc=True):
+    """ levenshtein_ratio_and_distance:
+        Calculates levenshtein distance between two strings.
+        If ratio_calc = True, the function computes the
+        levenshtein distance ratio of similarity between two strings
+        For all i and j, distance[i,j] will contain the Levenshtein
+        distance between the first i characters of s and the
+        first j characters of t
+    """
+    # Initialize matrix of zeros
+    rows = len(s)+1
+    cols = len(t)+1
+    distance = np.zeros((rows, cols), dtype=int)
+
+    # Populate matrix of zeros with the indeces of each character of both strings
+    for i in range(1, rows):
+        for k in range(1, cols):
+            distance[i][0] = i
+            distance[0][k] = k
+
+    # Iterate over the matrix to compute the cost of deletions,insertions and/or substitutions
+    for col in range(1, cols):
+        for row in range(1, rows):
+            if s[row-1] == t[col-1]:
+                # If the characters are the same in the two strings in a given position [i,j] then the cost is 0
+                cost = 0
+            else:
+                # In order to align the results with those of the Python Levenshtein package, if we choose to calculate the ratio
+                # the cost of a substitution is 2. If we calculate just distance, then the cost of a substitution is 1.
+                if ratio_calc == True:
+                    cost = 2
+                else:
+                    cost = 1
+            distance[row][col] = min(distance[row-1][col] + 1,      # Cost of deletions
+                                     # Cost of insertions
+                                     distance[row][col-1] + 1,
+                                     distance[row-1][col-1] + cost)     # Cost of substitutions
+    if ratio_calc == True:
+        # Computation of the Levenshtein Distance Ratio
+        Ratio = ((len(s)+len(t)) - distance[row][col]) / (len(s)+len(t))
+        return Ratio
+    else:
+        # print(distance)
+        # insertions and/or substitutions
+        # This is the minimum number of edits needed to convert string a to string b
+        return distance[row][col]
+
+
 class node:  
-    def __init__(self, i,x1,x2,y1,y2):  
+    def __init__(self, i,x1,x2,y1,y2, text_val):  
         self.i = i
         #x1,x2,y1,y2 
         self.x1 = x1  
@@ -21,8 +84,14 @@ class node:
         self.down = -1
         #stores node present to it's right
         self.right = -1
+        self.left  = -1
         #used in unused function
         self.parents = [] #stores all parent in path to current node
+        self.table_number = -1
+        self.table_col = -1
+        self.table_row = -1
+        self.text_value = text_val
+        self.match_percent = 0
 
 #check if two nodes are overlapping
 def overlapping(x1,x2,y1,y2,a1,a2,b1,b2):
@@ -112,6 +181,8 @@ def dfs(img,row,column,contours,Nodes,go_down,go_right,parent,root):
 		a1=Nodes[next_node].x1
 		b1=Nodes[next_node].y1
 		cv2.line(img,(x1,y1),(a1,b1),(167,88,162),2)
+		Nodes[current_node].right = next_node
+		Nodes[next_node].left = current_node
 		dfs(img,row,column+1,contours, Nodes, False, True,current_node,root)
 	
 	#look down if current row is not last row
@@ -139,7 +210,7 @@ def dfs(img,row,column,contours,Nodes,go_down,go_right,parent,root):
 						Nodes[current_node].down = contours[next_row][i]
 						Nodes[contours[next_row][i]].parent = current_node
 						Nodes[contours[next_row][i]].root = root
-						print("printing line")
+						# print("printing line")
 						cv2.line(img,(x1,y1),(a1,b1),(167,88,162),2)
 						dfs(img,next_row,i,contours, Nodes, True ,False,current_node,root)
 						flag=1
@@ -167,7 +238,7 @@ def assign_columns(img,columns, Nodes):
 				break
 			
 
-def make_graph(img,contours,key_fields,column_contours):
+def make_graph(img,contours,key_fields,column_contours, text_val, synonyms, labels):
 
 	#indexing countours with node numbers
 	i=0
@@ -177,12 +248,16 @@ def make_graph(img,contours,key_fields,column_contours):
 	node_to_row={}
 	row_key = {}
 	j=0
+	table_count = 0
 
 	for key in sorted(contours):
 		contours_as_nodes[j]=[]
 		row_key[j]=key 
 		for Node in contours[key]:
-			Nodes.append(node(i,Node[0],Node[0]+Node[2],Node[1],Node[1]+Node[3]))
+			if(i in text_val):
+				Nodes.append(node(i,Node[0],Node[0]+Node[2],Node[1],Node[1]+Node[3],text_val[i]))
+			else:
+				Nodes.append(node(i,Node[0],Node[0]+Node[2],Node[1],Node[1]+Node[3],""))
 			node_map[i] = Node
 			contours_as_nodes[j].append(i)
 			node_to_row[i] = j
@@ -195,6 +270,135 @@ def make_graph(img,contours,key_fields,column_contours):
 		Nodes[Node].is_key = True
 	#for row in contours_as_nodes:
 	#	for column in range(0,len(contours_as_nodes[row])):
+
+	# print('Printing.......')
+
+	key_row = 0
+	maxi = 0
+	for row in contours_as_nodes:
+		count = 0
+		print(contours_as_nodes[row])
+		for column in range(0, len(contours_as_nodes[row])):
+			if(Nodes[contours_as_nodes[row][column]].is_key):
+				count += 1
+		if(count >= maxi):
+			maxi = count
+			key_row = row
+
+	#we get the table start here, this row is the header	
+	print(key_row)
+	y1 = Nodes[contours_as_nodes[key_row][0]].y1
+	for j in range(0,len(contours_as_nodes[key_row])):
+		Nodes[contours_as_nodes[key_row][j]].is_key=True
+		Nodes[contours_as_nodes[key_row][j]].table_number = table_count
+		Nodes[contours_as_nodes[key_row][j]].table_col = j
+		Nodes[contours_as_nodes[key_row][j]].table_row = 0
+		Nodes[contours_as_nodes[key_row][j]].text_value = Nodes[contours_as_nodes[key_row][j]].text_value.upper()
+
+	num_fields = 0
+	start_val = key_row + 1
+
+	#now we'll check next row if there is any key (i.e. there could be subcategories)
+	text_blobs = 0 
+	key_blobs = 0
+	for j in range(0,len(contours_as_nodes[key_row+1])):
+		if(Nodes[contours_as_nodes[key_row+1][j]].is_key):
+			key_blobs+=1
+		else : text_blobs+=1
+		Nodes[contours_as_nodes[key_row][j]].table_number = table_count
+
+	if(key_blobs>=text_blobs):
+		for j in range(0,len(contours_as_nodes[key_row+1])):
+			Nodes[contours_as_nodes[key_row+1][j]].is_key=True
+		start_val += 1
+	y2 = Nodes[contours_as_nodes[start_val][0]].y1
+	while(not detect_line(img, Nodes[contours_as_nodes[start_val][1]].x1,  y1, y2)):
+		y1 = y2
+		start_val += 1
+		y2 = Nodes[contours_as_nodes[start_val][0]].y1
+
+	num_fields = len(contours_as_nodes[start_val])
+	
+	table_val_stop = start_val
+	table_end  = table_val_stop
+	table_row_count = 0
+	#now we gonna make sure no value inside the table is a key (we'll spare first column tho)
+	for i in range(start_val, len(contours_as_nodes)):
+		table_row_count+=1
+		if(abs(len(contours_as_nodes[i])-num_fields)>1):
+			table_val_stop = i-1
+			table_count += 1
+			break
+		Nodes[contours_as_nodes[i][0]].table_col = 0
+		Nodes[contours_as_nodes[i][0]].table_row = table_row_count
+		Nodes[contours_as_nodes[i][0]].table_number = table_count
+
+		for j in range(1,len(contours_as_nodes[i])):
+			Nodes[contours_as_nodes[i][j]].is_key=False
+			Nodes[contours_as_nodes[i][j]].table_col = j
+			Nodes[contours_as_nodes[i][j]].table_row = table_row_count
+			Nodes[contours_as_nodes[i][j]].table_number = table_count
+				
+	#now we gotta search if there is a total field that can be used
+	#we need keys value for this thing
+	#matching for column has to be done using coordinates
+
+	flag = True
+	cnt = 0
+	for i in range(table_val_stop + 1, min(table_val_stop+5,len(contours_as_nodes))):
+		col = 0
+		cnt += 1
+		for j in range(0, len(contours_as_nodes[i])):
+			if('total' in Nodes[contours_as_nodes[i][j]].text_value.lower() and Nodes[contours_as_nodes[i][j]].is_key):
+				# map values based on x coordinates
+				table_end = i
+				col = j
+				Nodes[contours_as_nodes[i][j]].table_number = table_count-1
+				# Nodes[contours_as_nodes[i][j]].table_col = col
+				# Nodes[contours_as_nodes[i][j]].table_row = Nodes[contours_as_nodes[table_val_stop][k]].table_row + cnt
+
+				break
+		if(table_end == i):
+			for j in range(col, len(contours_as_nodes[i])):
+				b1 = Nodes[contours_as_nodes[i][j]]
+				for k in range(0, len(contours_as_nodes[table_val_stop])):
+					b2 = Nodes[contours_as_nodes[table_val_stop][k]]
+					if(x_overlapping(b1.x1, b1.x2, b1.y1, b1.y2, b2.x1, b2.x2, b2.y1, b2.y2) > 0):
+						Nodes[contours_as_nodes[i][j]].table_col = Nodes[contours_as_nodes[table_val_stop][k]].table_col
+						Nodes[contours_as_nodes[i][j]].table_row = Nodes[contours_as_nodes[table_val_stop][k]].table_row + cnt
+						break
+
+			for j in range(table_end-1,table_val_stop,-1):
+				cnt-=1
+				for k in range(0, len(contours_as_nodes[j])):
+					Nodes[contours_as_nodes[j][k]].table_row = Nodes[contours_as_nodes[table_val_stop][k]].table_row + cnt
+					Nodes[contours_as_nodes[j][k]].table_number = Nodes[contours_as_nodes[table_val_stop][k]].table_number
+					b1 = Nodes[contours_as_nodes[j][k]]
+					for l in range(0,len(contours_as_nodes[table_val_stop])):
+						b2 = Nodes[contours_as_nodes[table_val_stop][l]]
+						if(x_overlapping(b1.x1, b1.x2, b1.y1, b1.y2, b2.x1, b2.x2, b2.y1, b2.y2) > 0):
+							Nodes[contours_as_nodes[j][k]].table_col = Nodes[contours_as_nodes[table_val_stop][l]].table_col
+							break		
+			break				
+
+	print("Print Vals")
+	print(key_row, table_val_stop, start_val) 
+	table_extract = [ [""]*(num_fields+5) ]
+	for i in range(0, table_end - key_row +3):
+		table_extract.append([""]*num_fields)
+	for i in range(key_row, table_end+1):
+		for j in range(0, len(contours_as_nodes[i])):
+			# print(Nodes[contours_as_nodes[i][j]].text_value, Nodes[contours_as_nodes[i][j]].table_row, Nodes[contours_as_nodes[i][j]].table_col)
+			table_extract[Nodes[contours_as_nodes[i][j]].table_row][Nodes[contours_as_nodes[i][j]].table_col] = Nodes[contours_as_nodes[i][j]].text_value
+			if(Nodes[contours_as_nodes[i][j]].is_key):
+				table_extract[Nodes[contours_as_nodes[i][j]].table_row][Nodes[contours_as_nodes[i][j]
+                                                                  ].table_col] = table_extract[Nodes[contours_as_nodes[i][j]].table_row][Nodes[contours_as_nodes[i][j]].table_col].upper()
+	print(table_extract)
+	import csv
+	with open("output.csv", "w", newline="") as f:
+		writer = csv.writer(f)
+		writer.writerows(table_extract)
+
 	for keyfield in key_fields:
 		row =  node_to_row[keyfield]
 		for i in range(0,len(contours_as_nodes[row]) ):
@@ -210,5 +414,106 @@ def make_graph(img,contours,key_fields,column_contours):
 		#print(i.column)
 	#make_columns(img,contours_as_nodes,node_map,graph,key_fields,Nodes,node_to_row)
 
+	for i in Nodes:
+		if i.table_number != -1:
+			if(Nodes[i.down].left != -1 and Nodes[Nodes[i.down].left].is_key):
+				i.down = -1
+
+	key_match = find_label(synonyms, key_fields, Nodes)
+	print(key_match)
+	for i in key_match:
+		print(labels[i], Nodes[int(key_match[i])].text_value)
+	data = extract(labels, key_match, Nodes)
+	with open('dict.csv', 'w', newline="") as csv_file:  
+		writer = csv.writer(csv_file)
+		for key, value in data.items():
+			writer.writerow([key, value])
+	# print(ppp)
 	cv2.imwrite("graph.jpg",img )
+
+
+def find_label(synonyms, detected_fields, Nodes):
+	#key_match is a dict with key= label no. and value = node number that matches that key
+	key_match = {}
+	prepositions = ['the', 'of', 'a', 'in', 'an', 'is', 'on']
+	for i in detected_fields:
+		# separate key from value if in same node
+		words = Nodes[i].text_value.lower()
+		words = words.split(' ')
+		node_words = []
+
+		for j in words:
+			if j not in prepositions:
+				node_words.append(j)
+
+		for label in synonyms:
+			words = synonyms[label]
+			for p in words:	
+				p=p.lower()
+				words = p.split(' ')
+				synonym_words = []
+				word_count = 0
+				match_count = 0
+				for j in words:
+					if j not in prepositions and len(j)>=2:
+						word_count += 1
+						for k in node_words:
+							if(k == j or (len(k) > 2 and levenshtein_ratio_and_distance(k, j) > 0.8)):
+								match_count += 1
+					percent = 0
+					if(word_count>0):percent = (match_count/word_count)
+					if Nodes[i].match_percent < percent:
+						Nodes[i].match_percent = percent
+						if(percent>0.7):
+							key_match[label] = i
+	return key_match
+
+
+def extract_non_table(labels, keymatch, Nodes, cur_node, label, vis):
+	if cur_node == -1:
+	    return ""
+	if vis[cur_node]:
+		return ""
+	vis[cur_node] = True
+	a=""
+	if cur_node not in vis:
+		a = Nodes[cur_node].text_value + \
+		    extract_non_table(labels, keymatch, Nodes,
+		                      Nodes[cur_node].down, label, vis)
+	return a
+
+
+def get_key(val, key_match):
+    for key, value in key_match.items():
+        # print(val, value)
+        if val == value:
+            return key
+    return "-1"
+
+def extract(labels, key_match, Nodes):
+	vis = np.zeros((len(Nodes)), dtype=bool)
+	data = {}
+	for i in range(0, len(Nodes)):
+		if Nodes[i].is_key and Nodes[i].table_number==-1:
+			# print(str(Nodes[i]))
+			label = get_key(str(i),key_match)
+			if label == "-1":
+				label = Nodes[i].text_value
+				# print ("-1")
+			else :
+				label = labels[label]
+				# print(label)
+			# data[label] = ""
+			a = ""
+			a = extract_non_table(labels, key_match, Nodes,
+			                      Nodes[i].right, label, vis)
+			a += extract_non_table(labels, key_match, Nodes,
+			                       Nodes[i].down, label, vis)
+			if(':' in label):
+				kk, vv = label.split(':',1)
+				data[kk] = vv
+				continue
+			if(len(a)>0):
+				data[label]=a
+	return data
 

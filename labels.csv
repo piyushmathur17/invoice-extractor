@@ -1,0 +1,29 @@
+Seller Address,0
+Seller GSTIN Number,1
+Country of Origin,2
+Currency,3
+Description,4
+Total Invoice amount entered by WH operator,5
+Total Invoice Quantity entered by WH operator,6
+Total TCS Collected,7
+Round Off Charges,8
+PO Number,9
+Invoice Items Total Amount,10
+Invoice Items total quantity,11
+Buyer GSTIN Number,12
+Ship to Address,13
+S.No,14
+Product ID,15
+HSN,16
+Title,17
+Quantity,18
+Unit Price,19
+Excise Duty,20
+Discount Percent,21
+SGST Percent,22
+CGST Percent,23
+IGST Percent,24
+Cess Percent,25
+TCS Percent,26
+Total Amount,27
+APP %,28

@@ -8,7 +8,22 @@ from merge_boxes import make_rows, merge_boxes
 from graph import make_graph
 #from correctPerspective import getAngle, rotate_image
 import time
-keys = ['supplier','taxable','item','freight','shipping','address','Discount','info','amt','amount','vehicle','bill','details','state','payment','insurance','charges','tax', 'value', 'dispatch', 'dispatched','seller', 'buyer', 'name', 'id', 'no.', 'number', 'gst', 'date', 'percent', 'invoice', 'total', 'cost', 'price', 'rate', 'description','article', 'quantity','amount', 'hsn','sl']
+
+import csv
+labels = {}
+with open('labels.csv', mode='r') as infile:
+    reader = csv.reader(infile)
+    labels = {rows[1]: rows[0] for rows in reader}
+
+synonyms = {}
+with open('label_synonyms.csv', mode='r') as infile:
+    reader = csv.reader(infile)
+    synonyms = {rows[0] : rows[1:] for rows in reader}
+
+print(synonyms)
+
+keys = ['state','code','cgst','igst','sku','sales','supplier','taxable','item','freight','shipping','address','Discount','info','amt','amount','vehicle','bill','details','state','payment','insurance','charges','tax', 'value', 'dispatch', 'dispatched','seller', 'buyer', 'name', 'id', 'no.', 'number', 'gst', 'date', 'percent', 'invoice', 'total', 'cost', 'price', 'rate', 'description','article', 'quantity','amount', 'hsn','sl']
+
 
 def levenshtein_ratio_and_distance(s, t, ratio_calc = True):
     """ levenshtein_ratio_and_distance:
@@ -96,6 +111,7 @@ def get_text(save_dir,file_name, write_ = False):
 	tesstime=0
 	tt=time.time()
 	key_nodes=[]
+	text_val={}
 	node_number=0
 	node_columns={}
 
@@ -114,13 +130,13 @@ def get_text(save_dir,file_name, write_ = False):
 			#y=y-offset
 			#x=x-offset
 			start = time.time()
-			cropped = img[y :y + h , x :x + w ]  
+			cropped = img[max(0,y-2) :y + h + 2 , max(0,x - 2)  : x + w + 2]  
 			end = time.time()
 			croptime+= end-start
 			# Apply OCR on the cropped image 
 
 			text = ""
-			text = pytesseract.image_to_string(cropped, lang='eng', config='--psm 7')
+			text = pytesseract.image_to_string(cropped, lang='eng', config='--psm 6')
 			p=text.split(' ')
 			for tex in p:
 				tex=tex.lower()
@@ -138,8 +154,11 @@ def get_text(save_dir,file_name, write_ = False):
 						if(len(text)>=1 and levenshtein_ratio_and_distance(k,tex)>0.8 ): 			
 							rect = cv2.rectangle(rect, (x, y), (x + w, y + h), (0, 0, 255), 1)
 							key_nodes.append(node_number-1)
+							# if(':' in text):
+							# 	key, val = text.split(':',1)
+							# 	break
 							break
-
+			text_val[node_number-1] = text	
 			end2 = time.time()
 			tesstime += end2-end
 			# Appending the text into file 
@@ -156,21 +175,21 @@ def get_text(save_dir,file_name, write_ = False):
 	cv2.imwrite(save_dir+'boxed_'+file_name, rect)
 
 
-	make_graph(rect,merge_cnt,key_nodes,column_contours)
+	make_graph(rect,merge_cnt,key_nodes,column_contours, text_val, synonyms, labels)
 	#cv2.imshow('ho hey',rect)
 	#cv2.waitKey(0)
 	#cv2.destroyAllWindows()
 
 def main():
 	
-	path = "/home/piyush/mygit/invoice-extractor/invoice_images/"
+	path = 'F:/Flipkart/New folder/helli/invoice-extractor/invoice_images/'
 
 	folders = listdir(path)
 	#print(pdfs)
 	for folder in folders:
 		dir_path = path + folder + "/"
 		images = listdir(dir_path)
-		if(folder!="Sample3"): continue
+		if(folder!="Sample1"): continue
 		for image in images:
 			if len(image.split('.')[0])>1:continue
 			file_name = image
