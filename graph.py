@@ -395,9 +395,6 @@ def make_graph(img,contours,key_fields,column_contours, text_val, synonyms, labe
                                                                   ].table_col] = table_extract[Nodes[contours_as_nodes[i][j]].table_row][Nodes[contours_as_nodes[i][j]].table_col].upper()
 	print(table_extract)
 	import csv
-	with open("output.csv", "w", newline="") as f:
-		writer = csv.writer(f)
-		writer.writerows(table_extract)
 
 	for keyfield in key_fields:
 		row =  node_to_row[keyfield]
@@ -424,10 +421,16 @@ def make_graph(img,contours,key_fields,column_contours, text_val, synonyms, labe
 	for i in key_match:
 		print(labels[i], Nodes[int(key_match[i])].text_value)
 	data = extract(labels, key_match, Nodes)
-	with open('dict.csv', 'w', newline="") as csv_file:  
+	with open('output.csv', 'w', newline="") as csv_file:  
 		writer = csv.writer(csv_file)
 		for key, value in data.items():
 			writer.writerow([key, value])
+
+	with open("output.csv", "a+", newline="") as f:
+		writer = csv.writer(f)
+		writer.writerows(table_extract)
+
+
 	# print(ppp)
 	cv2.imwrite("graph.jpg",img )
 
