@@ -1,35 +1,9 @@
 import cv2 
 import numpy as np
 from graph import make_graph
-def remove_lines(img):
-	gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-	laplacian = cv2.Laplacian(gray,cv2.CV_8UC1) # Laplacian Edge Detection
-	minLineLength = 100
-	maxLineGap = 40
-	lines = cv2.HoughLinesP(laplacian,2,np.pi/180,60,minLineLength,maxLineGap)
-	for line in lines:
-	    for x1,y1,x2,y2 in line:
-	        cv2.line(img,(x1,y1),(x2,y2),(255,255,255),3)
-	#gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-	#laplacian = cv2.Laplacian(gray,cv2.CV_8UC1) # Laplacian Edge Detection	
-	#lines = cv2.HoughLinesP(laplacian,2,np.pi/180,60,minLineLength,maxLineGap)
-	#for line in lines:
-	#    for x1,y1,x2,y2 in line:
-	#        cv2.line(img,(x1,y1),(x2,y2),(255,255,255),3)
-	cv2.imwrite('lines_removed0.png',img)
-	gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-	ret, thresh1 = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV) 
-	rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (4, 4)) 
 
-	# Appplying dilation on the threshold image 
-	dilation = cv2.dilate(thresh1, rect_kernel, iterations = 1) 
-	cv2.imwrite('dilated0.png', dilation)
-	# Finding contours 
-	contours, hierarchy = cv2.findContours(dilation, cv2.RETR_EXTERNAL, 
-												cv2.CHAIN_APPROX_SIMPLE)
-	#return contours, hierarchy
-
-
+#this function is used to expand boxes 
+#in vertical direction
 def stretch_columns(img):
 	structure = cv2.getStructuringElement(cv2.MORPH_RECT, (10,1))
 	img = cv2.erode(img, structure,iterations=1) 
@@ -48,7 +22,6 @@ def segment_columns(img,shape,contours):
 	for key in contours:
 		for i in contours[key]:
 			[x,y,w,h]= i
-			#ones = np.ones((h,w),np.uint8) * 255
 			mask = cv2.rectangle(mask, (x, y), (x + w, y + h), (255, 255, 255), -1) 
 			print(y," ",y+h," ",x," ",x+w," is 255")
 
@@ -60,7 +33,6 @@ def segment_columns(img,shape,contours):
 												cv2.CHAIN_APPROX_SIMPLE)
 	for c in cont:
 		[x,y,w,h]= cv2.boundingRect(c)
-		#ones = np.ones((h,w),np.uint8) * 255
 		img = cv2.rectangle(img, (x, y), (x + w, y + h), (0,255,255), 3) 
 
 	cv2.imwrite("blocks.jpg",img)
@@ -74,8 +46,7 @@ def ignore_lines(img,save_dir,file_name):
 	#after thresholding, to connect pixels in weak images
 	structure = cv2.getStructuringElement(cv2.MORPH_RECT, (1,2))
 	x = cv2.dilate(bw, structure,iterations=1) 
-	#structure = cv2.getStructuringElement(cv2.MORPH_RECT, (2,1))
-	#y = cv2.dilate(bw, structure,iterations=1) 
+	
 	y=bw
 
 	# Applying dilation on vertical lines
@@ -96,18 +67,6 @@ def ignore_lines(img,save_dir,file_name):
 	#applying mask of vertical lines to image
 	rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))  
 	x = cv2.dilate(x, rect_kernel, iterations = 1)
-
-	#minLineLength = 200
-	#maxLineGap = 20
-	#print("extracting vertical lines...",flush=True)
-	#ines=[]palta ki cgpa kitni h 8.07
-	#lines = cv2.HoughLinesP(x,1,np.pi/180,60,minLineLength,maxLineGap)
-	#garb=0
-	#if lines is not None: 
-	##else:
-	#	for line in lines: 
-	#	    for x1,y1,x2,y2 in line:
-	#	        cv2.line(img,(x1,y1),(x2,y2),(ret,ret,ret),3)
 
 
 	#applying dilation to horizontal lines
@@ -132,18 +91,7 @@ def ignore_lines(img,save_dir,file_name):
 	#applying vertical and horizontal line masks
 	ret, bw = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU ) 
 	bw = bw + x + y
-
-
-	#print("extracting horizontal lines...",flush=True)
-	#minLineLength = 200
-	#maxLineGap = 20
-	#lines = cv2.HoughLinesP(y,1,np.pi/180,60,minLineLength,maxLineGap)
-	#lines=None
-	#if lines is not None:
-	#	for line in lines:
-	#	    for x1,y1,x2,y2 in line:
-	#	        cv2.line(img,(x1,y1),(x2,y2),(ret,ret,ret),3)
-
+	
 	cv2.imwrite(save_dir+'lines_removed_'+file_name,bw)
 
 	rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5)) 
@@ -158,9 +106,3 @@ def ignore_lines(img,save_dir,file_name):
 	column_dilation = stretch_columns(dilation)
 	print("preprocessing done.",flush=True)
 	return contours,hierarchy, bw
-
-#img = cv2.imread("/home/piyush/Pictures/invoice1.png") 
-#img0 = img.copy()
-#img1 = img.copy()
-#remove_lines(img1)
-#contours, hierarchy = ignore_lines(img0)
