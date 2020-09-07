@@ -3,7 +3,7 @@ A python implementation to extract data in structured form from an image of an i
 
 # Flow:
 ## original invoice 
-![alt text](https://github.com/piyushmathur17/invoice-extractor/blob/master/invoice_images/sample_output_original.png | width=200)
+![alt text](https://github.com/piyushmathur17/invoice-extractor/blob/master/invoice_images/sample_output_original.png)
 
 ## preprocessing
 
